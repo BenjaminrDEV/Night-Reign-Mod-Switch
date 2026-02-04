@@ -4,62 +4,74 @@ import tkinter as tk
 from tkinter import messagebox
 from datetime import date
 
+
 class FileCopyCreateDirApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Change Save Files for Seemless Mod or Base Game")
-        self.root.geometry("400x150")  # Set window size
-        self.root.resizable(False, False)  # Prevent resizing
+        root.title("Change Save Files for Seemless Mod or Base Game")
+        root.geometry("400x150")
+        root.resizable(False, False)
 
-        # Add a label for instructions
-        tk.Label(root, text="Picture this ...\nChange Save Files for Seemless Mod or Base Game", font=("Arial", 10)).pack(pady=10)
+        tk.Label(
+            root,
+            text="Picture this ...\nChange Save Files for Seemless Mod or Base Game",
+            font=("Arial", 10),
+        ).pack(pady=10)
 
-        tk.Button(root, text="Seemless Mod", command=self.run, font=("Arial", 12), bg="lightblue", fg="black").pack(pady=10)
-        tk.Button(root, text="Base Game", command=self.base_game).pack()
-        self.file1 = "NR0000.sl2"
-        self.file2 = "NR0000.sl2.bak"
-        self.mod_save_nb = "NR0000.co2"
-        self.mod_save_b = "NR0000.co2.bak"
+        tk.Button(root, text="Seemless Mod", command=self.enable_mod,
+                  font=("Arial", 12), bg="lightblue").pack(pady=10)
+
+        tk.Button(root, text="Base Game", command=self.enable_base).pack()
+
+        # File names
+        self.base_save = "NR0000.sl2"
+        self.base_backup = "NR0000.sl2.bak"
+        self.mod_save = "NR0000.co2"
+        self.mod_backup = "NR0000.co2.bak"
+
         self.base_dir = os.getcwd()
-        self.new_dir = "BASE_GAME_SAVES"
-        self.current_date = str(date.today())
+        self.backup_dir = os.path.join(self.base_dir, "BASE_GAME_SAVES")
+        self.today = str(date.today())
 
-    def base_game(self):
+    # Helpers
+
+    def _dated_copy(self, filename):
+        """Copy file into backup folder with date appended."""
+        name, ext = os.path.splitext(filename)
+        dest = os.path.join(self.backup_dir, f"{name}-{self.today}{ext}")
+        shutil.copy2(filename, dest)
+
+    #Actions
+
+    def enable_base(self):
+        """Restore base game saves."""
         try:
-            os.rename(self.mod_save_nb, self.file1)
-            os.rename(self.mod_save_b, self.file2)
+            os.rename(self.mod_save, self.base_save)
+            os.rename(self.mod_backup, self.base_backup)
+            self.root.destroy()
+        except Exception:
+            messagebox.showinfo("Info", "Files are now set for Base Game")
 
-            self.root.destroy()  # Close the window after success
-        except Exception as e:
-            messagebox.showinfo("Class!", "Files are now set for Base Game")
-
-    def run(self):
-        target_dir = os.path.join(self.base_dir, self.new_dir)
-
+    def enable_mod(self):
+        """Backup base saves and switch to mod saves."""
         try:
-            os.makedirs(target_dir, exist_ok=True)
+            os.makedirs(self.backup_dir, exist_ok=True)
 
+            # Backup current base saves
+            self._dated_copy(self.base_save)
+            self._dated_copy(self.base_backup)
 
-            base = os.path.basename(self.file1)
-            name, original_ext = os.path.splitext(base)
-            dest = os.path.join(target_dir, name+ "-" + self.current_date + original_ext)
-            shutil.copy2(self.file1, dest)
-            new_src_name = os.path.join(self.base_dir, self.mod_save_nb)
-            os.rename(self.file1, new_src_name)
-            
+            # Rename to mod format
+            os.rename(self.base_save, self.mod_save)
+            os.rename(self.base_backup, self.mod_backup)
 
-            base = os.path.basename(self.file2)
-            name, original_ext = os.path.splitext(base)
-            dest = os.path.join(target_dir, name+ "-" + self.current_date + original_ext)
-            shutil.copy2(self.file2, dest)
-            new_src_name = os.path.join(self.base_dir, self.mod_save_b)
-            os.rename(self.file2, new_src_name)
+            messagebox.showinfo("Info", "Files are now set for Seemless Mod")
+            self.root.destroy()
 
-            messagebox.showinfo("Class!", "Files are now set for Seemless Mod")
-            self.root.destroy()  # Close the window after success
+        except Exception:
+            messagebox.showerror("Error", "Files are already set for Seemless Mod")
 
-        except Exception as e:
-            messagebox.showerror("Error", "File are already set for Seemless Mod")
+#app entry point
 
 if __name__ == "__main__":
     root = tk.Tk()
